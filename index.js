@@ -2,7 +2,7 @@ import {isMainThread, BroadcastChannel, Worker, workerData} from "worker_threads
 import {request} from "./request.js";
 import {batch} from "./files.js";
 import fs from "fs";
-import progress from "progress"
+import progress from "progress";
 import {program} from "commander";
 
 const channel = new BroadcastChannel('mightybatch');
@@ -10,9 +10,12 @@ const channel = new BroadcastChannel('mightybatch');
 if (isMainThread) {
 
     program.option('-w, --workers <number>');
+    program.option('-h, --host <string>');
     program.parse();
     let workers = parseInt(program.opts().workers);
+    let host = program.opts().host;
     if(!workers) workers = 2;
+    if(!host) host = "127.0.0.1";
 
     let batches = batch(workers);
     let total = 0;
@@ -36,12 +39,13 @@ if (isMainThread) {
     };
 
     for (let n = 0; n < workers; n++) {
-        new Worker("./index.js",{workerData:{"id":n,"batch":batches[n]}});
+        const url = `http://${host}:${5050+n}/sentence-transformers`;
+        new Worker("./index.js",{workerData:{"id":n,"url":url,"batch":batches[n]}});
     }
 
 } else {
 
-    const url = `http://192.168.1.20:${5050+workerData.id}/sentence-transformers`;
+    const url = workerData.url;
     for (var i=0;i<workerData.batch.length;i++) {
         let vectors = [];
         let errors = [];
