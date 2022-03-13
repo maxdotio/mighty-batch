@@ -3,7 +3,7 @@ import fs from "fs";
 function get_files() {
     const files = [];
     let k=0;
-    for(let i = 1; i <= 2; i++) {
+    for(let i = 1; i <= 50; i++) {
         if (i!=35) {
             let path = "parts/"+i+"/";
             let out = "vectors/"+i+"/";

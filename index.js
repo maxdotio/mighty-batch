@@ -3,15 +3,16 @@ import {request} from "./request.js";
 import {batch} from "./files.js";
 import fs from "fs";
 import progress from "progress"
+import {program} from "commander";
 
-/*
-var ProgressBar = require('progress');
-*/
-
-const workers = 2;
-const channel = new BroadcastChannel('hello');
+const channel = new BroadcastChannel('mightybatch');
 
 if (isMainThread) {
+
+    program.option('-w, --workers <number>');
+    program.parse();
+    let workers = parseInt(program.opts().workers);
+    if(!workers) workers = 2;
 
     let batches = batch(workers);
     let total = 0;
