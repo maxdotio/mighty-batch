@@ -1,0 +1,17 @@
+{
+  "name": "mighty-batch",
+  "version": "1.0.0",
+  "description": "Concurrent inference on lots of data",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Max Irwin",
+  "license": "Apache2",
+  "dependencies": {
+    "node-fetch": "^3.2.0",
+    "progress": "^2.0.3"
+  }
+}
