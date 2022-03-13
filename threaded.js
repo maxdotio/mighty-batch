@@ -20,7 +20,7 @@ if (!program.opts().child) {
     const controller = new AbortController();
     const { signal } = controller;
 
-    let total = total_files(1,2);
+    let total = total_files(1,1);
     var bar = new progress("Inferring [:bar] :percent remaining::etas elapsed::elapsed (:current/:total)", {complete: "=", incomplete: " ", width: 50, total: total});
 
     let threads_completed = 0;
@@ -57,10 +57,8 @@ if (!program.opts().child) {
 
     const url = program.opts().url;
     const thread_num = parseInt(program.opts().thread);
-    const sliced = slice(workers,thread_num,1,2);
+    const sliced = slice(workers,thread_num,1,1);
     
-    console.log(`${thread_num} :: ${sliced.length}`);
-
     for (var i=0;i<sliced.length;i++) {
         let vectors = [];
         let errors = [];
@@ -84,8 +82,9 @@ if (!program.opts().child) {
         }
 
         part.fields.vectors = vectors;
-        fs.writeFileSync(file.outfile,JSON.stringify(part,null,2),"utf-8");
+        fs.writeFileSync(file.outfile,JSON.stringify(part),"utf-8");
     }
+
     process.send({"type":"done","data":{"worker":thread_num}});
     process.exit(0);
 
