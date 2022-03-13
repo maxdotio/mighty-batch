@@ -1,0 +1,2 @@
+# mighty-batch
+Batch inference
