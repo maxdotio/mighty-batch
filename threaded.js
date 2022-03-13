@@ -20,7 +20,7 @@ if (!program.opts().child) {
     const controller = new AbortController();
     const { signal } = controller;
 
-    let total = total_files(1,1);
+    let total = total_files(1,50);
     var bar = new progress("Inferring [:bar] :percent remaining::etas elapsed::elapsed (:current/:total)", {complete: "=", incomplete: " ", width: 50, total: total});
 
     let threads_completed = 0;
@@ -57,7 +57,7 @@ if (!program.opts().child) {
 
     const url = program.opts().url;
     const thread_num = parseInt(program.opts().thread);
-    const sliced = slice(workers,thread_num,1,1);
+    const sliced = slice(workers,thread_num,1,50);
     
     for (var i=0;i<sliced.length;i++) {
         let vectors = [];
