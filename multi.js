@@ -7,8 +7,6 @@ import { program } from "commander";
 import { isMainThread, BroadcastChannel, Worker, workerData } from "worker_threads";
 
 //Hard coded constants
-const min_title = 1;
-const max_title = 50;
 
 //Command Line API
 program.option("-c, --child", false);
@@ -17,11 +15,21 @@ program.option("-w, --workers <number>",2);
 program.option("-n, --thread <number>",0);
 program.option("-h, --host <string>","127.0.0.1");
 program.option("-u, --url <string>");
+program.option("-m  --min_title <number>",1);
+program.option("-x  --max_title <number>",1);
 program.parse();
 
+
+//Mighty Server IP address
+const host = program.opts().host;
+
+//Threads/Workers combinations
 const threads = parseInt(program.opts().threads);
 const workers_per_thread = parseInt(program.opts().workers);
-const host = program.opts().host;
+
+//Folder numbers
+const min_title = parseInt(program.opts().min_title);
+const max_title = parseInt(program.opts().max_title);
 
 //Safety for event emitters (default max==10)
 process.setMaxListeners(threads*workers_per_thread*2);
@@ -54,7 +62,15 @@ if (!program.opts().child) {
     }
 
     let spawn_child = function(thread_num) {
-        const child = fork("./multi.js", ["--child","--thread",thread_num,"--threads",threads,"--workers",workers_per_thread,"--host",host], { signal });
+        const child = fork("./multi.js", [
+            "--child",
+            "--thread",thread_num,
+            "--threads",threads,
+            "--workers",workers_per_thread,
+            "--host",host,
+            "--min_title",min_title,
+            "--max_title",max_title
+        ], { signal });
         child.
           on("message", (event) => {
             
@@ -108,7 +124,18 @@ if (!program.opts().child) {
     };
 
     //Worker data
-    const batches = mini_batch(workers_per_thread,slice(workers_per_thread,thread_num,min_title,max_title));
+    const thread_files = slice(threads,thread_num,min_title,max_title);
+    const batches = mini_batch(workers_per_thread,thread_files);
+
+    //console.log(thread_num,':  thread_files:      ',thread_files.length,threads);
+    //console.log(thread_num,':  batches:           ',batches.length,workers_per_thread);
+    let total_batch_files = 0;
+    for(var i=0;i<batches.length;i++) {
+        //console.log(thread_num,':  worker:            ',batches[i].length,i);
+        total_batch_files += batches[i].length
+    }
+    //console.log(thread_num,':  total_batch_files:',total_batch_files)
+
     const base_port = 5050 + (thread_num*workers_per_thread);
 
     //Create workers_per_thread workers - which will all be part of this thread_num cluster child process.
