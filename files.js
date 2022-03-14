@@ -55,3 +55,14 @@ export function slice(threads,thread_num,min_folder,max_folder) {
     return queue;
 
 }
+
+export function mini_batch(workers,files) {
+    let batches = Array.apply(null, Array(workers)).map(()=>[]);
+
+    for(var i=0,j=-1;i<files.length;i++) {
+        if(++j>=workers) j = 0;
+        batches[j].push(files[i]);
+    }
+
+    return batches;
+}
