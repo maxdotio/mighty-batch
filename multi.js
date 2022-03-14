@@ -8,7 +8,7 @@ import { isMainThread, BroadcastChannel, Worker, workerData } from "worker_threa
 
 //Hard coded constants
 const min_title = 1;
-const max_title = 1;
+const max_title = 50;
 
 //Command Line API
 program.option("-c, --child", false);
