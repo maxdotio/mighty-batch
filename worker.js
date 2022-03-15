@@ -22,12 +22,17 @@ if (!isMainThread) {
 
         for (var j=0;j<part.fields.p.length;j++) {
             //Infer each part paragraph and accumulate
-            let response = await request(url,part.fields.p[j]);
-            if (response[1]) {
-                vectors.push(response[1].outputs);
+            let text = part.fields.p[j];
+            if (text.length>0) {
+                let response = await request(url,text);
+                if (response[1]) {
+                    vectors.push(response[1].outputs);
+                } else {
+                    errors.push(response[0]);
+                    vectors.push([]);
+                }
             } else {
-                errors.push(response[0]);
-                vectors.push([]);                
+                vectors.push([]);
             }
         }
 
