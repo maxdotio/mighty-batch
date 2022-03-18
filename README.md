@@ -32,7 +32,7 @@ $>node index.js --help
 Usage: index [options]
 
 Options:
-  -t, --threads <number>  Number of CPU threads to use.  This is also the number of processes that will run (one per thread). (default: 2)
+  -t, --threads <number>  Number of CPU threads (processes) to use. (default: 2)
   -w, --workers <number>  Number of asyncronous workers to use per thread process. (default: 2)
   -h, --host <string>     The IP address of the server where requests will be sent. (default: "127.0.0.1")
   -x, --max <number>      The maximum number of objects to send to the server. (default: send eveything)
