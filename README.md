@@ -4,7 +4,7 @@ A concurrent application to parallelize Mighty Inference Server processing of bu
 
 Currently in proof-of-concept stage to work with https://github.com/maxdotio/ecfr-prepare
 
-See the blog post for more information: 
+See this blog post for more information: https://max.io/blog/encoding-the-federal-register.html
 
 # Installation
 
