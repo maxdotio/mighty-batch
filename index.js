@@ -1,8 +1,9 @@
 import fs from "fs";
 import progress from "progress";
+import express from "express";
 import { fork } from "child_process";
 import { request } from "./request.js";
-import { batch,slice,total_files,mini_batch } from "./files.js";
+import { batch, slice, get_files, total_files, mini_batch } from "./files.js";
 import { Command, Option } from "commander";
 import { isMainThread, BroadcastChannel, Worker, workerData } from "worker_threads";
 
@@ -35,7 +36,10 @@ process.setMaxListeners(threads*workers_per_thread*2);
 const controller = new AbortController();
 const { signal } = controller;
 
-let total = total_files(min,max);
+
+let files = get_files(min,max);
+let total = files.length;
+
 var bar = new progress("Inferring [:bar] :percent remaining::etas elapsed::elapsed (:current/:total)", {complete: "=", incomplete: " ", width: 50, total: total});
 
 let threads_completed = 0;
@@ -53,11 +57,14 @@ let exit_child = function(event) {
         }
         console.log(`DONE! Total errors: ${errors.length}`);
         for(var e=0;e<errors.length;e++) {
-            console.log(errors[e]);
+            console.error(errors[e]);
         }
         process.exit(0);
     }
 }
+
+
+
 
 //
 // Spawns one thread.js child process
@@ -93,6 +100,31 @@ let spawn_child = function(thread_num) {
       });
 }
 
+
+//
+// A non-generator generator for any array
+let object_generator = function(arr) {
+    let idx = -1;
+    let max = arr.length;
+    return function next_object() { 
+        return (((++idx)<max)?arr[idx]:{"done":true});
+    }
+}
+let next_object = object_generator(files);
+
+//
+// Express listener
+// hands out id's based on a generator
+const app = express();
+app.get('/next', function (req, res) { 
+    let thing = next_object();
+    res.send(thing);
+});
+app.listen(3000);
+
+//
+//Spawn one child process per thread
 for (let n = 0; n < threads; n++) {
     spawn_child(n);
 }
+

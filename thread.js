@@ -78,7 +78,8 @@ if (isMainThread) {
         const url = `http://${host}:${port}/sentence-transformers`;
 
         //Level 3 - WORKER child (see worker.js)
-        new Worker("./worker.js",{workerData:{"worker_num":worker_num,"thread_num":thread_num,"url":url,"batch":batches[worker_num]}});
+        new Worker("./generator_worker.js",{workerData:{"worker_num":worker_num,"thread_num":thread_num,"url":url,"batch":batches[worker_num]}});
+        //new Worker("./worker.js",{workerData:{"worker_num":worker_num,"thread_num":thread_num,"url":url,"batch":batches[worker_num]}});
     }
 
 }

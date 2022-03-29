@@ -26,7 +26,6 @@ export function total_files(min,max) {
     return get_files(min,max).length;
 }
 
-
 export function batch(n,min_folder,max_folder) {
 
     const files = get_files(min_folder,max_folder);
@@ -65,4 +64,10 @@ export function mini_batch(workers,files) {
     }
 
     return batches;
+}
+
+
+export function get_lines(filename,max) {
+    let text = fs.readFileSync(filename,"utf-8");
+    return text.split('\n');
 }

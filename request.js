@@ -1,21 +1,29 @@
-//import http from "http";
 import fetch from "node-fetch";
 
-//const http_agent = new http.Agent({ keepAlive: true });
+export async function request(url,text,method){
+    method = method || "GET";
 
-//process.setMaxListeners(100);
+    let response;
 
-export async function request(url,text){//,agent) {
-    //agent = agent||http_agent;
-    let response = await fetch(url, {
-        method: 'POST',
-        body: JSON.stringify({text: text}),
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
+    if (method === "POST") {
+
+        response = await fetch(url, {
+            method: 'POST',
+            body: JSON.stringify({text: text}),
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+
+    } else {
+
+        if (text && text.length) {
+            url += "?" + new URLSearchParams({text:text}).toString();
         }
-        //,agent
-    });
+
+        response = await fetch(url);
+    }
 
     try {
         const output = await response.json();
