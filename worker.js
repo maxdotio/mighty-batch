@@ -10,42 +10,108 @@ if (!isMainThread) {
     const worker_num = workerData.worker_num;
     const thread_num = workerData.thread_num;
     const url = workerData.url;
-    const batch = workerData.batch;
+    //const batch = workerData.batch;
+    const property = workerData.property;
+    const secret = workerData.secret;
 
-    //For each JSON file
-    for (var i=0;i<batch.length;i++) {
-        let vectors = [];
-        let errors = [];
-        let file = batch[i];
-        let json = await readFile(file.filename,"utf-8");
-        let part = JSON.parse(json);
+    let keep_going = true;
 
-        for (var j=0;j<part.fields.p.length;j++) {
-            //Infer each part paragraph and accumulate
-            let text = part.fields.p[j];
-            if (text.length>0) {
-                let response = await request(url,text);
-                if (response[1]) {
-                    vectors.push(response[1].outputs);
-                } else {
-                    errors.push(response[0]);
-                    vectors.push([]);
-                }
-            } else {
-                vectors.push([]);
-            }
-        }
+    while (keep_going) {
 
-        if (errors.length==0) {
-            channel.postMessage({"type":"success","data":{"thread":thread_num,"worker":worker_num,"file":file.filename}});
+        let next_url = `http://localhost:3000/next?secret=${secret}`;
+        let object = await request(next_url);
+        let error = object[0];
+        let file = object[1];
+        if (error || file.done === true) {
+            keep_going = false;
         } else {
-            channel.postMessage({"type":"error","data":{"thread":thread_num,"worker":worker_num,"file":file.filename,"errors":errors}});
-        }
+            let vectors = [];
+            let texts = [];
+            let errors = [];
+            let part = file.object;
+            if(!part) {
+                try {
+                    let raw = await readFile(file.filename,"utf-8");
+                    part = JSON.parse(raw);
+                } catch(ex) {
+                    keep_going = false;
+                }
+            }
 
-        //Append the vectors to the part, and save to disk
-        part.fields.vectors = vectors;
-        await writeFile(file.outfile,JSON.stringify(part),"utf-8");
+            if (keep_going) {
+
+                //TODO make this a JSON selector...
+                let data_to_infer;
+                if (property && property.length && part[property]) {
+                    data_to_infer = part[property];
+                } else if (part.fields) {
+                    data_to_infer = part.fields.p;
+                } else {
+                    data_to_infer = part.text;
+                }
+
+                if (data_to_infer instanceof Array) {
+
+                    for (var j=0;j<data_to_infer.length;j++) {
+                        //Infer each part paragraph and accumulate
+                        let text = data_to_infer[j];
+                        if (text.length>0) {
+                            let response = await request(url,text);
+                            if (response[1]) {
+                                vectors.push(response[1].outputs);
+                                texts.push(response[1].texts);
+                            } else {
+                                errors.push(response[0]);
+                                vectors.push([]);
+                                texts.push([]);
+                            }
+                        } else {
+                            vectors.push([]);
+                            texts.push([]);
+                        }
+                    }
+
+                } else {
+
+                    //Infer each part paragraph and accumulate
+                    let text = data_to_infer;
+                    if (text.length>0) {
+                        let response = await request(url,text);
+                        if (response[1]) {
+                            vectors.push(response[1].outputs);
+                            texts.push(response[1].texts);
+                        } else {
+                            errors.push(response[0]);
+                            vectors.push([]);
+                            texts.push([]);
+                        }
+                    } else {
+                        vectors.push([]);
+                        texts.push([]);
+                    }
+                }
+
+                //Append the vectors to the part, and save to disk
+                if(part.fields) {
+                    part.fields.vectors = vectors;
+                    part.fields.texts = texts;
+                } else {
+                    part.vectors = vectors;
+                    part.texts = texts;
+                }
+                await writeFile(file.outfile,JSON.stringify(part),"utf-8");
+
+            }
+
+            if (errors.length==0) {
+                channel.postMessage({"type":"success","data":{"thread":thread_num,"worker":worker_num,"file":file.filename}});
+            } else {
+                channel.postMessage({"type":"error","data":{"thread":thread_num,"worker":worker_num,"file":file.filename,"errors":errors}});
+            }
+
+        }
     }
+
     channel.postMessage({"type":"done","data":{"thread":thread_num,"worker":worker_num}});
     channel.close();
 

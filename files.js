@@ -22,6 +22,23 @@ export function get_files(min,max) {
     return files;
 }
 
+export function get_json(filename,min,max) {
+    let json = JSON.parse(fs.readFileSync(filename,"utf-8"));
+    let files = []
+    min = min||0;
+    max = max||json.length;
+    let out = `vectors/${filename}/`;
+    fs.mkdirSync(out, { recursive: true });
+    for(let i = min; i <= max; i++) {
+        files.push({
+            "idx":i,
+            "object":json[i],
+            "outfile":`${out}${i}.json`
+        });
+    }
+    return files;
+}
+
 export function total_files(min,max) {
     return get_files(min,max).length;
 }

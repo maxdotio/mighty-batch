@@ -1,12 +1,17 @@
+#!/usr/bin/env node
+
 import fs from "fs";
 import progress from "progress";
 import express from "express";
 import { fork } from "child_process";
 import { request } from "./request.js";
-import { batch, slice, get_files, total_files, mini_batch } from "./files.js";
+import { batch, slice, get_files, get_json, total_files, mini_batch } from "./files.js";
 import { Command, Option } from "commander";
 import { isMainThread, BroadcastChannel, Worker, workerData } from "worker_threads";
 
+
+import { v4 as uuidv4 } from "uuid";
+const secret = uuidv4();
 
 //Command Line API
 let program = new Command();
@@ -14,6 +19,8 @@ program.addOption(new Option("-t, --threads <number>","Number of CPU threads to 
 program.addOption(new Option("-w, --workers <number>","Number of asyncronous workers to use per thread process.").default(2));
 program.addOption(new Option("-h, --host <string>","The IP address of the server where requests will be sent.").default("127.0.0.1"));
 program.addOption(new Option("-x, --max <number>","The maximum number of objects to send to the server.").default(0));
+program.addOption(new Option("-j, --json <string>","The filename of a JSON list of objects.").default(null));
+program.addOption(new Option("-p, --property <string>","The JSON property to convert (requires --json).").default(null));
 program.parse();
 
 
@@ -25,8 +32,12 @@ const threads = parseInt(program.opts().threads);
 const workers_per_thread = parseInt(program.opts().workers);
 
 //Folder numbers
-const min = 1;
+const min = 10;
 const max = parseInt(program.opts().max);
+
+//Content specs
+const json_file = program.opts().json;
+const property = program.opts().property;
 
 //Safety for event emitters (default max==10)
 process.setMaxListeners(threads*workers_per_thread*2);
@@ -36,8 +47,12 @@ process.setMaxListeners(threads*workers_per_thread*2);
 const controller = new AbortController();
 const { signal } = controller;
 
-
-let files = get_files(min,max);
+let files = [];
+if (json_file) {
+    files = get_json(json_file,min,max);
+} else {
+    files = get_files(min,max);
+}
 let total = files.length;
 
 var bar = new progress("Inferring [:bar] :percent remaining::etas elapsed::elapsed (:current/:total)", {complete: "=", incomplete: " ", width: 50, total: total});
@@ -59,12 +74,11 @@ let exit_child = function(event) {
         for(var e=0;e<errors.length;e++) {
             console.error(errors[e]);
         }
+
+        //Bye!
         process.exit(0);
     }
 }
-
-
-
 
 //
 // Spawns one thread.js child process
@@ -75,7 +89,9 @@ let spawn_child = function(thread_num) {
         "--threads",threads,
         "--workers",workers_per_thread,
         "--host",host,
-        "--max",max
+        "--max",max,
+        "--property",property,
+        "--secret",secret
     ], { signal });
     child.
       on("message", (event) => {
@@ -103,11 +119,12 @@ let spawn_child = function(thread_num) {
 
 //
 // A non-generator generator for any array
+const done_message = {"done":true};
 let object_generator = function(arr) {
     let idx = -1;
     let max = arr.length;
     return function next_object() { 
-        return (((++idx)<max)?arr[idx]:{"done":true});
+        return (((++idx)<max)?arr[idx]:done_message);
     }
 }
 let next_object = object_generator(files);
@@ -116,12 +133,15 @@ let next_object = object_generator(files);
 // Express listener
 // hands out id's based on a generator
 const app = express();
-app.get('/next', function (req, res) { 
-    let thing = next_object();
-    res.send(thing);
+app.get('/next', function (req, res) {
+    if (req.query.secret == secret) {
+        let thing = next_object();
+        res.send(thing);
+    } else {
+        res.send(done_message);
+    }
 });
 app.listen(3000);
-
 //
 //Spawn one child process per thread
 for (let n = 0; n < threads; n++) {
