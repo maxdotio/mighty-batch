@@ -7,6 +7,12 @@ import { Command, Option } from "commander";
 import { isMainThread, BroadcastChannel, Worker, workerData } from "worker_threads";
 
 
+import path from 'path';
+import {fileURLToPath} from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+
 //Command Line API
 let program = new Command();
 program.addOption(new Option("-t, --threads <number>","Number of CPU threads to use.  This is also the number of processes that will run (one per thread).").default(2));
@@ -73,7 +79,7 @@ if (isMainThread) {
         const url = `http://${host}:${port}/sentence-transformers`;
 
         //Level 3 - WORKER child (see worker.js)
-        new Worker("./worker.js",{workerData:{"worker_num":worker_num,"thread_num":thread_num,"url":url,"property":property,"secret":secret}});
+        new Worker(__dirname + "/worker.js",{workerData:{"worker_num":worker_num,"thread_num":thread_num,"url":url,"property":property,"secret":secret}});
     }
 
 }

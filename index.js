@@ -13,6 +13,12 @@ import { isMainThread, BroadcastChannel, Worker, workerData } from "worker_threa
 import { v4 as uuidv4 } from "uuid";
 const secret = uuidv4();
 
+import path from 'path';
+import {fileURLToPath} from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+
 //Command Line API
 let program = new Command();
 program.addOption(new Option("-t, --threads <number>","Number of CPU threads to use.  This is also the number of processes that will run (one per thread).").default(2));
@@ -84,7 +90,7 @@ let exit_child = function(event) {
 // Spawns one thread.js child process
 // Just specify a number!
 let spawn_child = function(thread_num) {
-    const child = fork("./thread.js", [
+    const child = fork(__dirname + "/thread.js", [
         "--thread",thread_num,
         "--threads",threads,
         "--workers",workers_per_thread,
