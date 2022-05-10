@@ -18,7 +18,7 @@ if (!isMainThread) {
 
     while (keep_going) {
 
-        let next_url = `http://localhost:3000/next?secret=${secret}`;
+        let next_url = `http://localhost:5888/next?secret=${secret}`;
         let object = await request(next_url);
         let error = object[0];
         let file = object[1];
