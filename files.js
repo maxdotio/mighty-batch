@@ -1,4 +1,16 @@
 import fs from "fs";
+import crypto from "crypto";
+import Sitemapper from "sitemapper";
+
+export function clean_filename(filename) {
+    return filename.replace(/[:\/\.]+/g,'_')
+}
+
+export function string_to_uuid(str) {
+    let key = crypto.createHash('md5').update(str).digest('hex');
+    let hash = `${key.substring(0, 8)}-${key.substring(8, 12)}-${key.substring(12, 16)}-${key.substring(16, 20)}-${key.substring(20)}`;
+    return hash;
+}
 
 export function get_files(min,max) {
     const files = [];
@@ -33,6 +45,42 @@ export function get_json(filename,min,max) {
         files.push({
             "idx":i,
             "object":json[i],
+            "outfile":`${out}${i}.json`
+        });
+    }
+    return files;
+}
+
+export async function get_sitemap(filename,min,max) {
+    const sitemap = new Sitemapper();
+    let sites = await sitemap.fetch(filename);
+    let files = [];
+    let out = `vectors/${filename.replace(/[:\/]+/g,'_')}/`;
+    min = min||0;
+    max = max||sites.sites.length;
+    fs.mkdirSync(out, { recursive: true });
+    for(let i = min; i <= max; i++) {
+        files.push({
+            "idx":i,
+            "url":sites.sites[i],
+            "outfile":`${out}${i}.json`
+        });
+    }
+    return files;
+}
+
+export async function get_urls(filename,min,max) {
+    const sitemap = new Sitemapper();
+    let urls = fs.readFileSync(filename,"utf-8").split('\n');
+    let files = [];
+    let out = `vectors/${filename.replace(/[:\/]+/g,'_')}/`;
+    min = min||0;
+    max = max||urls.length;
+    fs.mkdirSync(out, { recursive: true });
+    for(let i = min; i <= max; i++) {
+        files.push({
+            "idx":i,
+            "url":urls[i],
             "outfile":`${out}${i}.json`
         });
     }

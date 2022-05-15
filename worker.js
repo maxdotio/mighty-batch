@@ -10,7 +10,6 @@ if (!isMainThread) {
     const worker_num = workerData.worker_num;
     const thread_num = workerData.thread_num;
     const url = workerData.url;
-    //const batch = workerData.batch;
     const property = workerData.property;
     const secret = workerData.secret;
 
@@ -25,35 +24,37 @@ if (!isMainThread) {
         if (error || file.done === true) {
             keep_going = false;
         } else {
+            let success = true;
             let vectors = [];
             let texts = [];
             let errors = [];
-            let part = file.object;
-            if(!part) {
+            let doc = file.object;
+            if(!doc) {
                 try {
                     let raw = await readFile(file.filename,"utf-8");
-                    part = JSON.parse(raw);
+                    doc = JSON.parse(raw);
+                    success = true;
                 } catch(ex) {
-                    keep_going = false;
+                    success = false;
                 }
             }
 
-            if (keep_going) {
+            if (success) {
 
                 //TODO make this a JSON selector...
                 let data_to_infer;
-                if (property && property.length && part[property]) {
-                    data_to_infer = part[property];
-                } else if (part.fields) {
-                    data_to_infer = part.fields.p;
+                if (property && property.length && doc[property]) {
+                    data_to_infer = doc[property];
+                } else if (doc.fields) {
+                    data_to_infer = doc.fields.p;
                 } else {
-                    data_to_infer = part.text;
+                    data_to_infer = doc.text;
                 }
 
                 if (data_to_infer instanceof Array) {
 
                     for (var j=0;j<data_to_infer.length;j++) {
-                        //Infer each part paragraph and accumulate
+                        //Infer each doc paragraph and accumulate
                         let text = data_to_infer[j];
                         if (text.length>0) {
                             let response = await request(url,text);
@@ -73,7 +74,7 @@ if (!isMainThread) {
 
                 } else {
 
-                    //Infer each part paragraph and accumulate
+                    //Infer each doc paragraph and accumulate
                     let text = data_to_infer;
                     if (text.length>0) {
                         let response = await request(url,text);
@@ -91,15 +92,15 @@ if (!isMainThread) {
                     }
                 }
 
-                //Append the vectors to the part, and save to disk
-                if(part.fields) {
-                    part.fields.vectors = vectors;
-                    part.fields.texts = texts;
+                //Append the vectors to the doc, and save to disk
+                if(doc.fields) {
+                    doc.fields.vectors = vectors;
+                    doc.fields.texts = texts;
                 } else {
-                    part.vectors = vectors;
-                    part.texts = texts;
+                    doc.vectors = vectors;
+                    doc.texts = texts;
                 }
-                await writeFile(file.outfile,JSON.stringify(part),"utf-8");
+                await writeFile(file.outfile,JSON.stringify(doc),"utf-8");
 
             }
 
