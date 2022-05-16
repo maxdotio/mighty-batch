@@ -32,6 +32,7 @@ Options:
   -h, --host <string>      The IP address of the server where requests will be sent. (default: "127.0.0.1")
   -x, --max <number>       The maximum number of objects to send to the server. (default: 0)
   -j, --json <string>      The filename of a JSON list of objects. (default: null)
+  -s, --sitemap <string>   The URL of a sitemap XML file to be crawled and inferred. (default: null)
   -p, --property <string>  The JSON property to convert (requires --json). (default: null)
   --help                   display help for command
 
