@@ -1,6 +1,6 @@
 # mighty-batch
 
-A concurrent application to parallelize Mighty Inference Server processing of bulk content.
+A concurrent application to parallelize Mighty Inference Server processing of bulk content.  Easily get emeddings for JSON documents or HTML files.
 
 # Installation
 
@@ -17,6 +17,8 @@ This command will run a total of 128 concurrent inference requests for the text 
 ```
 mighty-batch --threads 32 --workers 4 --host 173.50.0.1 --json my_documents.json --property text
 ```
+
+...The host needs to have a running Mighty Inference Server cluster running with as many ports open as (threads * workers).
 
 # Help
 
@@ -37,6 +39,30 @@ Options:
   --help                   display help for command
 
 ```
+
+# Sitemap
+
+You can scrape a site and convert the text of each web page by providing a sitemap.xml URL path.
+
+```
+mighty-batch --threads 32 --workers 4 --host 173.50.0.1 --sitemap https://example.com/sitemap.xml
+```
+
+The following metadata are automatically scraped and added to the document for each page text.  The text value is then inferred by Mighty to obtain vectors...
+
+```javascript
+{
+    "docid":uuid,
+    "url":url,
+    "title":title,
+    "author":author,
+    "description":description,
+    "published":published,
+    "modified":modified,
+    "image":image,
+    "text":text
+}
+````
 
 # Background
 

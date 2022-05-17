@@ -78,7 +78,7 @@ export async function fetch_and_transform(url){
             let id = string_to_uuid(canonical);
 
             let obj = {
-                "id":id,
+                "docid":id,
                 "url":canonical,
                 "title":title,
                 "author":author,
