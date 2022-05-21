@@ -13,11 +13,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 
+//TODO - allow a different pipeline.
+const pipeline = "sentence-transformers"
+
 //Command Line API
 let program = new Command();
 program.addOption(new Option("-t, --threads <number>","Number of CPU threads to use.  This is also the number of processes that will run (one per thread).").default(2));
 program.addOption(new Option("-w, --workers <number>","Number of asyncronous workers to use per thread process.").default(2));
-program.addOption(new Option("-h, --host <string>","The IP address of the server where requests will be sent.").default("127.0.0.1"));
+program.addOption(new Option("-h, --host <string>","The address of the server where requests will be sent.").default("localhost"));
+program.addOption(new Option("-H, --hosts <string>","A comma separated list of hosts where requests will be sent.").default(null));
 program.addOption(new Option("-x, --max <number>","The maximum number of objects to send to the server.").default(100));
 program.addOption(new Option("-p, --property <string>","The JSON property to convert (requires --json).").default(null));
 program.addOption(new Option("-s, --secret <string>","(system flag, do not use)").default(""));
@@ -27,6 +31,12 @@ program.parse();
 
 //Mighty Server IP address
 const host = program.opts().host;
+
+//If hosts is specified, it will override single host/port assignment by assigning one host per worker
+let hosts = program.opts().hosts;
+if (hosts && hosts.length) {
+    hosts = hosts.split(',');
+}
 
 //Threads/Workers combinations
 const threads = parseInt(program.opts().threads);
@@ -70,13 +80,22 @@ if (isMainThread) {
 
     };
 
-    //Worker data
+    //Mighty ports start at 5050 and grow from there
     const base_port = 5050 + (thread_num*workers_per_thread);
+    let host_idx = 0;
 
     //Create workers_per_thread workers - which will all be part of this thread_num cluster child process.
     for (let worker_num = 0; worker_num < workers_per_thread; worker_num++) {
+
         const port = base_port + worker_num;
-        const url = `http://${host}:${port}/sentence-transformers`;
+        let url = `http://${host}:${port}/${pipeline}`;
+
+        if (hosts && hosts.length) {
+            url = hosts[host_idx];
+            if (url.lastIndexOf('/') != url.length-1) url += '/';
+            url += pipeline;
+            if (++host_idx>=hosts.length) host_idx=0;
+        }
 
         //Level 3 - WORKER child (see worker.js)
         new Worker(__dirname + "/worker.js",{workerData:{"worker_num":worker_num,"thread_num":thread_num,"url":url,"property":property,"secret":secret}});

@@ -4,7 +4,7 @@ import fs from "fs";
 import progress from "progress";
 import express from "express";
 import { fork } from "child_process";
-import { request } from "./request.js";
+import { request, slice_hosts } from "./request.js";
 import { fetch_and_transform } from "./html.js";
 import { batch, slice, get_files, get_json, get_sitemap, total_files, mini_batch, clean_filename } from "./files.js";
 import { Command, Option } from "commander";
@@ -24,7 +24,8 @@ const __dirname = path.dirname(__filename);
 let program = new Command();
 program.addOption(new Option("-t, --threads <number>","Number of CPU threads to use. This is also the number of processes that will run (one per thread).").default(2));
 program.addOption(new Option("-w, --workers <number>","Number of asyncronous workers to use per thread process.").default(2));
-program.addOption(new Option("-h, --host <string>","The IP address of the server where requests will be sent.").default("127.0.0.1"));
+program.addOption(new Option("-h, --host <string>","The address of the server where requests will be sent.").default("localhost"));
+program.addOption(new Option("-H, --hosts <string>","A comma separated list of hosts where requests will be sent.").default(null));
 program.addOption(new Option("-x, --max <number>","The maximum number of objects to send to the server.").default(0));
 program.addOption(new Option("-j, --json <string>","The filename of a JSON list of objects.").default(null));
 program.addOption(new Option("-s, --sitemap <string>","The sitemap.xml file location.").default(null));
@@ -32,12 +33,23 @@ program.addOption(new Option("-p, --property <string>","The JSON property to con
 program.parse();
 
 
-//Mighty Server IP address
-const host = program.opts().host;
 
 //Threads/Workers combinations
 const threads = parseInt(program.opts().threads);
 const workers_per_thread = parseInt(program.opts().workers);
+
+//Mighty Server address
+const host = program.opts().host;
+
+//If hosts is specified, it will override single host/port assignment by assigning one host per connection (threads*workers)
+let hosts = program.opts().hosts;
+if (hosts && hosts.length) {
+    hosts = hosts.split(',');
+    if (hosts.length !== threads*workers_per_thread) {
+        console.error(`Oops! You must specify the same number for both hosts and connections (threads * workers).  You have specified ${hosts.length} hosts, and ${threads*workers_per_thread} connections(${threads} threads * ${workers_per_thread} workers)`);
+        process.exit(1);
+    }
+}
 
 //Folder numbers
 const min = 0;
@@ -50,7 +62,6 @@ const property = program.opts().property;
 
 //For sitemaps, this contains any broken/missing URLs
 let missing = [];
-
 
 //Safety for event emitters (default max==10)
 process.setMaxListeners(threads*workers_per_thread*2);
@@ -124,7 +135,8 @@ let exit_child = function(event) {
 // Spawns one thread.js child process
 // Just specify a number!
 let spawn_child = function(thread_num) {
-    const child = fork(__dirname + "/thread.js", [
+
+    let params = [
         "--thread",thread_num,
         "--threads",threads,
         "--workers",workers_per_thread,
@@ -132,7 +144,15 @@ let spawn_child = function(thread_num) {
         "--max",max,
         "--property",property,
         "--secret",secret
-    ], { signal });
+    ];
+
+    const thread_hosts = slice_hosts(hosts,threads,thread_num);
+    if (thread_hosts) {
+        params.push("--hosts");
+        params.push(thread_hosts);
+    }
+
+    const child = fork(__dirname + "/thread.js", params, { signal });
     child.
       on("message", (event) => {
         
@@ -167,6 +187,8 @@ let object_generator = function(arr) {
         if (++idx<max) {
             let obj = arr[idx];
             if (obj.url) {
+                //A URL was specified instead of a JSON object or filename.
+                //Try to scrape it!
                 try {
                     let doc = await fetch_and_transform(obj.url);
                     if (!doc[0] && doc[1]) {
@@ -205,6 +227,7 @@ app.get('/next', async function (req, res) {
     }
 });
 app.listen(5888);
+
 //
 //Spawn one child process per thread
 for (let n = 0; n < threads; n++) {

@@ -54,3 +54,17 @@ export async function request_html(url) {
         return [ex,null];
     }
 }
+
+export function slice_hosts(hosts,threads,thread_num) {
+
+    if (!hosts || !hosts.length) return null;
+
+    let queue = [];
+
+    for(var i=thread_num;i<hosts.length;i+=threads) {
+        queue.push(hosts[i]);
+    }
+
+    return queue;
+
+}
