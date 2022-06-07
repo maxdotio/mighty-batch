@@ -1,5 +1,5 @@
 import { readFile,writeFile } from "fs/promises";
-import { request } from "./request.js";
+import { request,request_pair } from "./request.js";
 import { isMainThread, BroadcastChannel, workerData } from "worker_threads";
 
 if (!isMainThread) {
@@ -43,8 +43,17 @@ if (!isMainThread) {
 
                 //TODO make this a JSON selector...
                 let data_to_infer;
-                if (property && property.length && doc[property]) {
-                    data_to_infer = doc[property];
+                let context_to_infer = null;
+                if (property && property.length) {
+                    let pair = property.split(',');
+                    if (doc[property]) {
+                        data_to_infer = doc[property];
+                    } else if (property && pair.length==2 && doc[pair[0]] && doc[pair[1]]) {
+                        data_to_infer = doc[pair[0]];
+                        context_to_infer = doc[pair[1]];
+                    } else {
+                        data_to_infer = doc.text;
+                    }
                 } else if (doc.fields) {
                     data_to_infer = doc.fields.p;
                 } else {
@@ -56,15 +65,32 @@ if (!isMainThread) {
                     for (var j=0;j<data_to_infer.length;j++) {
                         //Infer each doc paragraph and accumulate
                         let text = data_to_infer[j];
+                        let text2 = null;
+                        if (context_to_infer instanceof Array) {
+                            text2 = context_to_infer[j]
+                        }
+
                         if (text.length>0) {
-                            let response = await request(url,text);
-                            if (response[1]) {
-                                vectors.push(response[1].outputs);
-                                texts.push(response[1].texts);
+                            let response;
+                            if (text2 && text2.length > 0) {
+                                response = await request_pair(url,text,text2);
+                                if (response[1]) {
+                                    vectors.push(response[1]);
+                                } else {
+                                    errors.push(response[0]);
+                                    vectors.push([]);
+                                    texts.push([]);
+                                }                                
                             } else {
-                                errors.push(response[0]);
-                                vectors.push([]);
-                                texts.push([]);
+                                response = await request(url,text);
+                                if (response[1]) {
+                                    vectors.push(response[1].outputs);
+                                    texts.push(response[1].texts);
+                                } else {
+                                    errors.push(response[0]);
+                                    vectors.push([]);
+                                    texts.push([]);
+                                }
                             }
                         } else {
                             vectors.push([]);
@@ -76,15 +102,28 @@ if (!isMainThread) {
 
                     //Infer each doc paragraph and accumulate
                     let text = data_to_infer;
+                    let text2 = context_to_infer;
                     if (text.length>0) {
-                        let response = await request(url,text);
-                        if (response[1]) {
-                            vectors.push(response[1].outputs);
-                            texts.push(response[1].texts);
+                        let response;
+                        if (text2 && text2.length > 0) {
+                            response = await request_pair(url,text,text2);
+                            if (response[1]) {
+                                vectors.push(response[1]);
+                            } else {
+                                errors.push(response[0]);
+                                vectors.push([]);
+                                texts.push([]);
+                            }                              
                         } else {
-                            errors.push(response[0]);
-                            vectors.push([]);
-                            texts.push([]);
+                            response = await request(url,text);
+                            if (response[1]) {
+                                vectors.push(response[1].outputs);
+                                texts.push(response[1].texts);
+                            } else {
+                                errors.push(response[0]);
+                                vectors.push([]);
+                                texts.push([]);
+                            }
                         }
                     } else {
                         vectors.push([]);

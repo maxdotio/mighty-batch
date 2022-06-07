@@ -29,15 +29,15 @@ $>node index.js --help
 Usage: index [options]
 
 Options:
-  -t, --threads <number>   Number of CPU threads to use.  This is also the number of processes that will run (one per thread). (default: 2)
+  -t, --threads <number>   Number of CPU threads to use. This is also the number of processes that will run (one per thread). (default: 2)
   -w, --workers <number>   Number of asyncronous workers to use per thread process. (default: 2)
-  -h, --host <string>      The IP address of the server where requests will be sent. (default: "127.0.0.1")
+  -h, --host <string>      The address of the server where requests will be sent. (default: "localhost")
+  -H, --hosts <string>     A comma separated list of hosts where requests will be sent. (default: null)
   -x, --max <number>       The maximum number of objects to send to the server. (default: 0)
   -j, --json <string>      The filename of a JSON list of objects. (default: null)
-  -s, --sitemap <string>   The URL of a sitemap XML file to be crawled and inferred. (default: null)
-  -p, --property <string>  The JSON property to convert (requires --json). (default: null)
+  -s, --sitemap <string>   The sitemap.xml file location. (default: null)
+  -p, --property <string>  The JSON property to convert. (default: null)
   --help                   display help for command
-
 ```
 
 # Sitemap
@@ -63,6 +63,10 @@ The following metadata are automatically scraped and added to the document for e
     "text":text
 }
 ````
+
+# Multiple Hosts
+
+It is possible to specify multiple machines that are running Mighty.  In single host mode (-h, --host) you only need to specify the mighty server address and the port numbers will be assigned and provided by mighty-batch
 
 # Background
 

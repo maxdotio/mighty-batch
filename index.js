@@ -30,9 +30,13 @@ program.addOption(new Option("-x, --max <number>","The maximum number of objects
 program.addOption(new Option("-j, --json <string>","The filename of a JSON list of objects.").default(null));
 program.addOption(new Option("-s, --sitemap <string>","The sitemap.xml file location.").default(null));
 program.addOption(new Option("-p, --property <string>","The JSON property to convert.").default(null));
+program.addOption(new Option("--embeddings").default(false));
+program.addOption(new Option("--sentence-transformers").default(false));
+program.addOption(new Option("--question-answering").default(false));
+program.addOption(new Option("--sequence-classification").default(false));
+program.addOption(new Option("--token-classification").default(false));
+
 program.parse();
-
-
 
 //Threads/Workers combinations
 const threads = parseInt(program.opts().threads);
@@ -59,6 +63,21 @@ const max = parseInt(program.opts().max);
 const json_file = program.opts().json;
 const sitemap_url = program.opts().sitemap;
 const property = program.opts().property;
+
+//Pipeline specs and conflicts
+let pipeline = null;
+if (program.opts().embeddings) pipeline = "--embeddings";
+if (program.opts().sentenceTransformer) pipeline = "--sentence-transformers";
+if (program.opts().questionAnswering) pipeline = "--question-answering";
+if (program.opts().sequenceClassification) pipeline = "--sequence-classification";
+if (program.opts().tokenClassification) pipeline = "--token-classification";
+//Default to sentence-transformers
+if (!pipeline) pipeline = "--sentence-transformers";
+
+if (pipeline == "--question-answering" && property.split(',').length !==2) {
+    console.error(`Oops! You must specify two properties separated by a comma (the first for the question, the second for the context).  You have specified "${property}"`);
+    process.exit(1);
+}
 
 //For sitemaps, this contains any broken/missing URLs
 let missing = [];
@@ -143,7 +162,8 @@ let spawn_child = function(thread_num) {
         "--host",host,
         "--max",max,
         "--property",property,
-        "--secret",secret
+        "--secret",secret,
+        pipeline
     ];
 
     const thread_hosts = slice_hosts(hosts,threads,thread_num);

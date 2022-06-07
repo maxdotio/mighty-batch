@@ -12,10 +12,6 @@ import {fileURLToPath} from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-
-//TODO - allow a different pipeline.
-const pipeline = "sentence-transformers"
-
 //Command Line API
 let program = new Command();
 program.addOption(new Option("-t, --threads <number>","Number of CPU threads to use.  This is also the number of processes that will run (one per thread).").default(2));
@@ -26,6 +22,11 @@ program.addOption(new Option("-x, --max <number>","The maximum number of objects
 program.addOption(new Option("-p, --property <string>","The JSON property to convert (requires --json).").default(null));
 program.addOption(new Option("-s, --secret <string>","(system flag, do not use)").default(""));
 program.addOption(new Option("-n, --thread <number>","(system flag, do not use)").default(0));
+program.addOption(new Option("--embeddings").default(false));
+program.addOption(new Option("--sentence-transformers").default(false));
+program.addOption(new Option("--question-answering").default(false));
+program.addOption(new Option("--sequence-classification").default(false));
+program.addOption(new Option("--token-classification").default(false));
 program.parse();
 
 
@@ -51,6 +52,16 @@ const property = program.opts().property;
 
 //API security
 const secret = program.opts().secret;
+
+//Pipeline specs
+let pipeline = null;
+if (program.opts().embeddings) pipeline = "";
+if (program.opts().sentenceTransformer) pipeline = "sentence-transformers";
+if (program.opts().questionAnswering) pipeline = "question-answering";
+if (program.opts().sequenceClassification) pipeline = "sequence-classification";
+if (program.opts().tokenClassification) pipeline = "token-classification";
+//Default to sentence-transformers
+if (pipeline == null) pipeline = "sentence-transformers";
 
 //Safety for event emitters (default max==10)
 process.setMaxListeners(threads*workers_per_thread*2);
