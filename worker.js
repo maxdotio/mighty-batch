@@ -17,6 +17,55 @@ if (!isMainThread) {
 
     let keep_going = true;
 
+    let do_inference = async function(text,text2,errors,vectors,texts) {
+
+        let vec = [];
+        let txt = [];
+        let err = [];
+
+        if (text.length>0) {
+            let response;
+            if (text2 && text2.length > 0) {
+                response = await request_pair(url,text,text2);
+                if (response[1]) {
+                    vec = response[1];
+                } else {
+                    err = response[0];
+                    vec = [];
+                    txt = [];
+                }                              
+            } else if (is_visual) {
+                //The text value holds the filename of an image to infer
+                let b64 = await imageToBase64(text);
+                response = await request_base64(url,"data:image/png;base64," + b64);
+                if (response[1]) {
+                    vec = response[1].outputs;
+                    txt = []; //no text for base64
+                } else {
+                    err = response[0];
+                    vec = [];
+                    txt = [];
+                }
+            } else {
+                response = await request(url,text);
+                if (response[1]) {
+                    vec = response[1].outputs;
+                    txt = response[1].texts;
+                } else {
+                    err = response[0];
+                    vec = [];
+                    txt = [];
+                }
+            }
+        } else {
+            vec = [];
+            txt = [];
+        }
+
+        return {errors:err,vectors:vec,texts:txt};
+
+    }
+
     while (keep_going) {
 
         let next_url = `http://localhost:5888/next?secret=${secret}`;
@@ -40,47 +89,7 @@ if (!isMainThread) {
                     success = false;
                 }
             }
-
-            let do_inference = async function(text,text2) {
-                if (text.length>0) {
-                    let response;
-                    if (text2 && text2.length > 0) {
-                        response = await request_pair(url,text,text2);
-                        if (response[1]) {
-                            vectors.push(response[1]);
-                        } else {
-                            errors.push(response[0]);
-                            vectors.push([]);
-                            texts.push([]);
-                        }                              
-                    } else if (is_visual) {
-                        //The text value holds the filename of an image to infer
-                        let b64 = await imageToBase64(text);
-                        response = await request_base64(url,"data:image/png;base64," + b64);
-                        if (response[1]) {
-                            vectors.push(response[1].outputs);
-                            texts.push(response[1].texts);
-                        } else {
-                            errors.push(response[0]);
-                            vectors.push([]);
-                            texts.push([]);
-                        }
-                    } else {
-                        response = await request(url,text);
-                        if (response[1]) {
-                            vectors.push(response[1].outputs);
-                            texts.push(response[1].texts);
-                        } else {
-                            errors.push(response[0]);
-                            vectors.push([]);
-                            texts.push([]);
-                        }
-                    }
-                } else {
-                    vectors.push([]);
-                    texts.push([]);
-                }
-            }
+            
 
             if (success) {
 
@@ -113,7 +122,10 @@ if (!isMainThread) {
                             text2 = context_to_infer[j]
                         }
 
-                        do_inference(text,text2);
+                        let inferred = await do_inference(text,text2);
+                        errors = errors.concat(inferred.errors);
+                        vectors = vectors.concat(inferred.vectors);
+                        texts = texts.concat(inferred.texts);
 
                     }
 
@@ -123,7 +135,10 @@ if (!isMainThread) {
                     let text = data_to_infer;
                     let text2 = context_to_infer;
 
-                    do_inference(text,text2);
+                    let inferred = await do_inference(text,text2);
+                    errors = errors.concat(inferred.errors);
+                    vectors = vectors.concat(inferred.vectors);
+                    texts = texts.concat(inferred.texts);
 
                 }
 
