@@ -71,9 +71,9 @@ export async function request_pair(url,text1,text2,method){
     }
 }
 
-export async function request_base64(url,b64){
+export async function request_base64(url,b64) {
 
-    response = await fetch(url, {
+    let response = await fetch(url, {
         method: 'POST',
         body: JSON.stringify({"base64": b64}),
         headers: {

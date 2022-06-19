@@ -1,7 +1,7 @@
 import { readFile,writeFile } from "fs/promises";
 import { request,request_pair,request_base64 } from "./request.js";
 import { isMainThread, BroadcastChannel, workerData } from "worker_threads";
-import { imageToBase64 } from "image-to-base64";
+import imageToBase64 from "image-to-base64";
 
 if (!isMainThread) {
     //Level 3 - WORKER child (see multi.js)
@@ -41,6 +41,47 @@ if (!isMainThread) {
                 }
             }
 
+            let do_inference = async function(text,text2) {
+                if (text.length>0) {
+                    let response;
+                    if (text2 && text2.length > 0) {
+                        response = await request_pair(url,text,text2);
+                        if (response[1]) {
+                            vectors.push(response[1]);
+                        } else {
+                            errors.push(response[0]);
+                            vectors.push([]);
+                            texts.push([]);
+                        }                              
+                    } else if (is_visual) {
+                        //The text value holds the filename of an image to infer
+                        let b64 = await imageToBase64(text);
+                        response = await request_base64(url,"data:image/png;base64," + b64);
+                        if (response[1]) {
+                            vectors.push(response[1].outputs);
+                            texts.push(response[1].texts);
+                        } else {
+                            errors.push(response[0]);
+                            vectors.push([]);
+                            texts.push([]);
+                        }
+                    } else {
+                        response = await request(url,text);
+                        if (response[1]) {
+                            vectors.push(response[1].outputs);
+                            texts.push(response[1].texts);
+                        } else {
+                            errors.push(response[0]);
+                            vectors.push([]);
+                            texts.push([]);
+                        }
+                    }
+                } else {
+                    vectors.push([]);
+                    texts.push([]);
+                }
+            }
+
             if (success) {
 
                 //TODO make this a JSON selector...
@@ -61,48 +102,6 @@ if (!isMainThread) {
                 } else {
                     data_to_infer = doc.text;
                 }
-
-                let do_inference = function(text,text2) {
-                    if (text.length>0) {
-                        let response;
-                        if (text2 && text2.length > 0) {
-                            response = await request_pair(url,text,text2);
-                            if (response[1]) {
-                                vectors.push(response[1]);
-                            } else {
-                                errors.push(response[0]);
-                                vectors.push([]);
-                                texts.push([]);
-                            }                              
-                        } else if (is_visual) {
-                            //The text value holds the filename of an image to infer
-                            let b64 = await imageToBase64(text);
-                            response = await request_base64(url,"data:image/png;base64," + b64);
-                            if (response[1]) {
-                                vectors.push(response[1].outputs);
-                                texts.push(response[1].texts);
-                            } else {
-                                errors.push(response[0]);
-                                vectors.push([]);
-                                texts.push([]);
-                            }
-                        } else {
-                            response = await request(url,text);
-                            if (response[1]) {
-                                vectors.push(response[1].outputs);
-                                texts.push(response[1].texts);
-                            } else {
-                                errors.push(response[0]);
-                                vectors.push([]);
-                                texts.push([]);
-                            }
-                        }
-                    } else {
-                        vectors.push([]);
-                        texts.push([]);
-                    }
-                }
-
 
                 if (data_to_infer instanceof Array) {
 

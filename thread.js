@@ -31,7 +31,6 @@ program.addOption(new Option("--visual").default(false));
 
 program.parse();
 
-
 //Mighty Server IP address
 const host = program.opts().host;
 
