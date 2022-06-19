@@ -71,6 +71,26 @@ export async function request_pair(url,text1,text2,method){
     }
 }
 
+export async function request_base64(url,b64){
+
+    response = await fetch(url, {
+        method: 'POST',
+        body: JSON.stringify({"base64": b64}),
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        }
+    });
+
+    try {
+        const output = await response.json();
+        return [null,output];
+    } catch(ex) {
+        const output = null;
+        return [ex,output];
+    }
+}
+
 export async function request_html(url) {
     const controller = new AbortController();
     const timeout = setTimeout(() => {

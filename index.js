@@ -6,7 +6,7 @@ import express from "express";
 import { fork } from "child_process";
 import { request, slice_hosts } from "./request.js";
 import { fetch_and_transform } from "./html.js";
-import { batch, slice, get_files, get_json, get_sitemap, total_files, mini_batch, clean_filename } from "./files.js";
+import { batch, slice, get_files, get_parts, get_json, get_sitemap, total_files, mini_batch, clean_filename } from "./files.js";
 import { Command, Option } from "commander";
 import { isMainThread, BroadcastChannel, Worker, workerData } from "worker_threads";
 
@@ -28,6 +28,7 @@ program.addOption(new Option("-h, --host <string>","The address of the server wh
 program.addOption(new Option("-H, --hosts <string>","A comma separated list of hosts where requests will be sent.").default(null));
 program.addOption(new Option("-x, --max <number>","The maximum number of objects to send to the server.").default(0));
 program.addOption(new Option("-j, --json <string>","The filename of a JSON list of objects.").default(null));
+program.addOption(new Option("-f, --files <string>","The path to the JSON files.").default(null));
 program.addOption(new Option("-s, --sitemap <string>","The sitemap.xml file location.").default(null));
 program.addOption(new Option("-p, --property <string>","The JSON property to convert.").default(null));
 program.addOption(new Option("--embeddings").default(false));
@@ -35,6 +36,7 @@ program.addOption(new Option("--sentence-transformers").default(false));
 program.addOption(new Option("--question-answering").default(false));
 program.addOption(new Option("--sequence-classification").default(false));
 program.addOption(new Option("--token-classification").default(false));
+program.addOption(new Option("--visual").default(false));
 
 program.parse();
 
@@ -62,6 +64,7 @@ const max = parseInt(program.opts().max);
 //Content specs
 const json_file = program.opts().json;
 const sitemap_url = program.opts().sitemap;
+const files_path = program.opts().files;
 const property = program.opts().property;
 
 //Pipeline specs and conflicts
@@ -71,6 +74,8 @@ if (program.opts().sentenceTransformer) pipeline = "--sentence-transformers";
 if (program.opts().questionAnswering) pipeline = "--question-answering";
 if (program.opts().sequenceClassification) pipeline = "--sequence-classification";
 if (program.opts().tokenClassification) pipeline = "--token-classification";
+if (program.opts().visual) pipeline = "--visual";
+
 //Default to sentence-transformers
 if (!pipeline) pipeline = "--sentence-transformers";
 
@@ -103,9 +108,14 @@ if (json_file) {
     } else {
         console.log(`Sitemap ${sitemap_url} either not found or is empty!`);
     }
+} else if (files_path) {
+    name = "files";
+    files = get_files(files_path,min,max);
+    console.log(files.length);
+    console.log(files[0]);
 } else {
     name = "parts";
-    files = get_files(min,max);
+    files = get_parts(min,max);
 }
 
 let total = files.length;

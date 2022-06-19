@@ -1,6 +1,7 @@
 import { readFile,writeFile } from "fs/promises";
-import { request,request_pair } from "./request.js";
+import { request,request_pair,request_base64 } from "./request.js";
 import { isMainThread, BroadcastChannel, workerData } from "worker_threads";
+import { imageToBase64 } from "image-to-base64";
 
 if (!isMainThread) {
     //Level 3 - WORKER child (see multi.js)
@@ -12,6 +13,7 @@ if (!isMainThread) {
     const url = workerData.url;
     const property = workerData.property;
     const secret = workerData.secret;
+    const is_visual = workerData.visual;
 
     let keep_going = true;
 
@@ -60,49 +62,7 @@ if (!isMainThread) {
                     data_to_infer = doc.text;
                 }
 
-                if (data_to_infer instanceof Array) {
-
-                    for (var j=0;j<data_to_infer.length;j++) {
-                        //Infer each doc paragraph and accumulate
-                        let text = data_to_infer[j];
-                        let text2 = null;
-                        if (context_to_infer instanceof Array) {
-                            text2 = context_to_infer[j]
-                        }
-
-                        if (text.length>0) {
-                            let response;
-                            if (text2 && text2.length > 0) {
-                                response = await request_pair(url,text,text2);
-                                if (response[1]) {
-                                    vectors.push(response[1]);
-                                } else {
-                                    errors.push(response[0]);
-                                    vectors.push([]);
-                                    texts.push([]);
-                                }                                
-                            } else {
-                                response = await request(url,text);
-                                if (response[1]) {
-                                    vectors.push(response[1].outputs);
-                                    texts.push(response[1].texts);
-                                } else {
-                                    errors.push(response[0]);
-                                    vectors.push([]);
-                                    texts.push([]);
-                                }
-                            }
-                        } else {
-                            vectors.push([]);
-                            texts.push([]);
-                        }
-                    }
-
-                } else {
-
-                    //Infer each doc paragraph and accumulate
-                    let text = data_to_infer;
-                    let text2 = context_to_infer;
+                let do_inference = function(text,text2) {
                     if (text.length>0) {
                         let response;
                         if (text2 && text2.length > 0) {
@@ -114,6 +74,18 @@ if (!isMainThread) {
                                 vectors.push([]);
                                 texts.push([]);
                             }                              
+                        } else if (is_visual) {
+                            //The text value holds the filename of an image to infer
+                            let b64 = await imageToBase64(text);
+                            response = await request_base64(url,"data:image/png;base64," + b64);
+                            if (response[1]) {
+                                vectors.push(response[1].outputs);
+                                texts.push(response[1].texts);
+                            } else {
+                                errors.push(response[0]);
+                                vectors.push([]);
+                                texts.push([]);
+                            }
                         } else {
                             response = await request(url,text);
                             if (response[1]) {
@@ -129,6 +101,31 @@ if (!isMainThread) {
                         vectors.push([]);
                         texts.push([]);
                     }
+                }
+
+
+                if (data_to_infer instanceof Array) {
+
+                    for (var j=0;j<data_to_infer.length;j++) {
+                        //Infer each doc paragraph and accumulate
+                        let text = data_to_infer[j];
+                        let text2 = null;
+                        if (context_to_infer instanceof Array) {
+                            text2 = context_to_infer[j]
+                        }
+
+                        do_inference(text,text2);
+
+                    }
+
+                } else {
+
+                    //Infer each doc paragraph and accumulate
+                    let text = data_to_infer;
+                    let text2 = context_to_infer;
+
+                    do_inference(text,text2);
+
                 }
 
                 //Append the vectors to the doc, and save to disk

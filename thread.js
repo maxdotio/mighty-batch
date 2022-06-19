@@ -27,6 +27,8 @@ program.addOption(new Option("--sentence-transformers").default(false));
 program.addOption(new Option("--question-answering").default(false));
 program.addOption(new Option("--sequence-classification").default(false));
 program.addOption(new Option("--token-classification").default(false));
+program.addOption(new Option("--visual").default(false));
+
 program.parse();
 
 
@@ -53,6 +55,9 @@ const property = program.opts().property;
 //API security
 const secret = program.opts().secret;
 
+//Base64
+const is_visual = (program.opts().visual)?true:false;
+
 //Pipeline specs
 let pipeline = null;
 if (program.opts().embeddings) pipeline = "";
@@ -60,6 +65,7 @@ if (program.opts().sentenceTransformer) pipeline = "sentence-transformers";
 if (program.opts().questionAnswering) pipeline = "question-answering";
 if (program.opts().sequenceClassification) pipeline = "sequence-classification";
 if (program.opts().tokenClassification) pipeline = "token-classification";
+if (program.opts().visual) pipeline = "visual";
 //Default to sentence-transformers
 if (pipeline == null) pipeline = "sentence-transformers";
 
@@ -109,7 +115,7 @@ if (isMainThread) {
         }
 
         //Level 3 - WORKER child (see worker.js)
-        new Worker(__dirname + "/worker.js",{workerData:{"worker_num":worker_num,"thread_num":thread_num,"url":url,"property":property,"secret":secret}});
+        new Worker(__dirname + "/worker.js",{workerData:{"worker_num":worker_num,"thread_num":thread_num,"url":url,"property":property,"visual":is_visual,"secret":secret}});
     }
 
 }

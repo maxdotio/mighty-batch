@@ -12,7 +12,26 @@ export function string_to_uuid(str) {
     return hash;
 }
 
-export function get_files(min,max) {
+export function get_files(files_path,min,max) {
+    const files = [];
+    let out = "vectors/"+clean_filename(files_path)+"/";
+    fs.mkdirSync(out, { recursive: true });
+    let filenames = fs.readdirSync(files_path);
+    min = min||0;
+    max = max||filenames.length;    
+    for(var i=min;i<max;i++) {
+        if(filenames[i].indexOf(".json")>0) {
+            files.push({
+                "file":i,
+                "filename":files_path + '/' + filenames[i],
+                "outfile":out + filenames[i]
+            });
+        }
+    }
+    return files;
+}
+
+export function get_parts(min,max) {
     const files = [];
     for(let i = (min||1); i <= (max||50); i++) {
         if (i!=35) {
@@ -88,12 +107,12 @@ export async function get_urls(filename,min,max) {
 }
 
 export function total_files(min,max) {
-    return get_files(min,max).length;
+    return get_parts(min,max).length;
 }
 
 export function batch(n,min_folder,max_folder) {
 
-    const files = get_files(min_folder,max_folder);
+    const files = get_parts(min_folder,max_folder);
 
     let batches = Array.apply(null, Array(n)).map(()=>[]);
 
@@ -108,7 +127,7 @@ export function batch(n,min_folder,max_folder) {
 
 export function slice(threads,thread_num,min_folder,max_folder) {
 
-    const files = get_files(min_folder,max_folder);
+    const files = get_parts(min_folder,max_folder);
 
     let queue = [];
 
