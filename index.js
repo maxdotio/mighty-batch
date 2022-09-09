@@ -5,6 +5,7 @@ import progress from "progress";
 import express from "express";
 import { fork } from "child_process";
 import { request, slice_hosts } from "./request.js";
+import { jsonl } from "./jsonl.js";
 import { fetch_and_transform } from "./html.js";
 import { batch, slice, get_files, get_parts, get_json, get_sitemap, total_files, mini_batch, clean_filename } from "./files.js";
 import { Command, Option } from "commander";
@@ -28,6 +29,7 @@ program.addOption(new Option("-h, --host <string>","The address of the server wh
 program.addOption(new Option("-H, --hosts <string>","A comma separated list of hosts where requests will be sent.").default(null));
 program.addOption(new Option("-x, --max <number>","The maximum number of objects to send to the server.").default(0));
 program.addOption(new Option("-j, --json <string>","The filename of a JSON list of objects.").default(null));
+program.addOption(new Option("-l, --jsonl <string>","The filename of a JSON lines list of objects.").default(null));
 program.addOption(new Option("-f, --files <string>","The path to the JSON files.").default(null));
 program.addOption(new Option("-s, --sitemap <string>","The sitemap.xml file location.").default(null));
 program.addOption(new Option("-p, --property <string>","The JSON property to convert.").default(null));
@@ -63,6 +65,7 @@ const max = parseInt(program.opts().max);
 
 //Content specs
 const json_file = program.opts().json;
+const jsonl_file = program.opts().jsonl;
 const sitemap_url = program.opts().sitemap;
 const files_path = program.opts().files;
 const property = program.opts().property;
@@ -100,6 +103,11 @@ let name = "mighty-batch";
 if (json_file) {
     name = clean_filename(json_file);
     files = get_json(json_file,min,max);
+} else if (jsonl_file) {
+    name =  clean_filename(jsonl_file);
+    let jsonl_stream = new jsonl(jsonl_file);
+    await jsonl_stream.get_lines();
+    files = jsonl_stream.lines;
 } else if (sitemap_url) {
     name = clean_filename(sitemap_url);
     files = await get_sitemap(sitemap_url,min,max);
@@ -230,6 +238,14 @@ let object_generator = function(arr) {
                 } catch (ex) {
                     bar.tick();
                     return {"error":{"url":obj.url,"ex":ex}};
+                }
+            } else if (obj.jsonstring) {
+                //A JSON string which hasn't been parsed yet!
+                try {
+                    obj.object = JSON.parse(obj.jsonstring);
+                } catch (ex) {
+                    bar.tick();
+                    return {"error":{"url":obj.url,"ex":ex}};                    
                 }
             }
             return obj;
