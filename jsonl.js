@@ -16,7 +16,7 @@ jsonl.prototype.get_lines = async function(min,max) {
     max = max||-1;    
     mkdirSync(out, { recursive: true });
     try {
-        const filename = "test.jsonl";
+        const filename = self.filename;
         const rl = createInterface({
             input: createReadStream(filename),
             crlfDelay: Infinity
