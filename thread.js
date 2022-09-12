@@ -20,6 +20,7 @@ program.addOption(new Option("-h, --host <string>","The address of the server wh
 program.addOption(new Option("-H, --hosts <string>","A comma separated list of hosts where requests will be sent.").default(null));
 program.addOption(new Option("-x, --max <number>","The maximum number of objects to send to the server.").default(100));
 program.addOption(new Option("-p, --property <string>","The JSON property to convert (requires --json).").default(null));
+program.addOption(new Option("-m, --method <string>","GET (default) or POST").default(0));
 program.addOption(new Option("-s, --secret <string>","(system flag, do not use)").default(""));
 program.addOption(new Option("-n, --thread <number>","(system flag, do not use)").default(0));
 program.addOption(new Option("--embeddings").default(false));
@@ -50,6 +51,9 @@ const max = parseInt(program.opts().max);
 
 //Content specs
 const property = program.opts().property;
+
+//HTTP method
+const method = program.opts().method;
 
 //API security
 const secret = program.opts().secret;
@@ -114,7 +118,7 @@ if (isMainThread) {
         }
 
         //Level 3 - WORKER child (see worker.js)
-        new Worker(__dirname + "/worker.js",{workerData:{"worker_num":worker_num,"thread_num":thread_num,"url":url,"property":property,"visual":is_visual,"secret":secret}});
+        new Worker(__dirname + "/worker.js",{workerData:{"worker_num":worker_num,"thread_num":thread_num,"url":url,"property":property,"visual":is_visual,"method":method,"secret":secret}});
     }
 
 }

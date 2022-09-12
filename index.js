@@ -33,6 +33,7 @@ program.addOption(new Option("-l, --jsonl <string>","The filename of a JSON line
 program.addOption(new Option("-f, --files <string>","The path to the JSON files.").default(null));
 program.addOption(new Option("-s, --sitemap <string>","The sitemap.xml file location.").default(null));
 program.addOption(new Option("-p, --property <string>","The JSON property to convert.").default(null));
+program.addOption(new Option("-m, --method <string>","GET (default) or POST").default("GET"));
 program.addOption(new Option("--embeddings").default(false));
 program.addOption(new Option("--sentence-transformers").default(false));
 program.addOption(new Option("--question-answering").default(false));
@@ -72,19 +73,36 @@ const property = program.opts().property;
 
 //Pipeline specs and conflicts
 let pipeline = null;
-if (program.opts().embeddings) pipeline = "--embeddings";
-if (program.opts().sentenceTransformer) pipeline = "--sentence-transformers";
-if (program.opts().questionAnswering) pipeline = "--question-answering";
-if (program.opts().sequenceClassification) pipeline = "--sequence-classification";
-if (program.opts().tokenClassification) pipeline = "--token-classification";
-if (program.opts().visual) pipeline = "--visual";
-
+let set_count = 0;
+if (program.opts().embeddings) { pipeline = "--embeddings"; set_count++; }
+if (program.opts().sentenceTransformer) { pipeline = "--sentence-transformers"; set_count++; }
+if (program.opts().questionAnswering) { pipeline = "--question-answering"; set_count++; }
+if (program.opts().sequenceClassification) { pipeline = "--sequence-classification"; set_count++; }
+if (program.opts().tokenClassification) { pipeline = "--token-classification"; set_count++; }
+if (program.opts().visual) { pipeline = "--visual"; set_count++; }
+if (set_count>1){
+    console.error("Multiple pipelines specified.  Please choose only one!  Exiting...");
+    process.exit(1);
+}
 //Default to sentence-transformers
 if (!pipeline) pipeline = "--sentence-transformers";
 
 if (pipeline == "--question-answering" && property.split(',').length !==2) {
     console.error(`Oops! You must specify two properties separated by a comma (the first for the question, the second for the context).  You have specified "${property}"`);
     process.exit(1);
+}
+
+
+//HTTP Method
+let method = program.opts().method.toUpperCase();
+if (method !== "GET" && method !== "POST") {
+    console.warn(`HTTP method "${method}" not supported, defaulting to GET`);
+    method = "GET";
+}
+
+if (method !== "GET" && program.opts().visual) {
+    console.warn(`Visual pipelines only support HTTP GET for now.`);
+    method = "GET";
 }
 
 //For sitemaps, this contains any broken/missing URLs
@@ -180,6 +198,7 @@ let spawn_child = function(thread_num) {
         "--host",host,
         "--max",max,
         "--property",property,
+        "--method",method,
         "--secret",secret,
         pipeline
     ];

@@ -14,6 +14,7 @@ if (!isMainThread) {
     const property = workerData.property;
     const secret = workerData.secret;
     const is_visual = workerData.visual;
+    const method = workerData.method;
 
     let keep_going = true;
 
@@ -26,7 +27,7 @@ if (!isMainThread) {
         if (text.length>0) {
             let response;
             if (text2 && text2.length > 0) {
-                response = await request_pair(url,text,text2);
+                response = await request_pair(url,text,text2,method);
                 if (response[1]) {
                     vec = response[1];
                 } else {
@@ -47,7 +48,7 @@ if (!isMainThread) {
                     txt = [];
                 }
             } else {
-                response = await request(url,text);
+                response = await request(url,text,method);
                 if (response[1]) {
                     vec = response[1].outputs;
                     txt = response[1].texts;
