@@ -1,6 +1,6 @@
 {
   "name": "mighty-batch",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Concurrent inference on lots of data",
   "main": "index.js",
   "type": "module",

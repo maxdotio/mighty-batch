@@ -4,10 +4,10 @@ import fs from "fs";
 import progress from "progress";
 import express from "express";
 import { fork } from "child_process";
-import { request, slice_hosts } from "./request.js";
-import { jsonl } from "./jsonl.js";
-import { fetch_and_transform } from "./html.js";
-import { batch, slice, get_files, get_parts, get_json, get_sitemap, total_files, mini_batch, clean_filename } from "./files.js";
+import { request, slice_hosts } from "./src/request.js";
+import { jsonl } from "./src/jsonl.js";
+import { fetch_and_transform } from "./src/html.js";
+import { batch, slice, get_files, get_parts, get_json, get_sitemap, total_files, mini_batch, clean_filename } from "./src/files.js";
 import { Command, Option } from "commander";
 import { isMainThread, BroadcastChannel, Worker, workerData } from "worker_threads";
 
@@ -209,7 +209,7 @@ let spawn_child = function(thread_num) {
         params.push(thread_hosts);
     }
 
-    const child = fork(__dirname + "/thread.js", params, { signal });
+    const child = fork(__dirname + "/src/thread.js", params, { signal });
     child.
       on("message", (event) => {
         
