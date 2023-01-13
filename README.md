@@ -29,16 +29,33 @@ $>node index.js --help
 Usage: index [options]
 
 Options:
-  -t, --threads <number>   Number of CPU threads to use. This is also the number of processes that will run (one per thread). (default: 2)
-  -w, --workers <number>   Number of asyncronous workers to use per thread process. (default: 2)
-  -h, --host <string>      The address of the server where requests will be sent. (default: "localhost")
-  -H, --hosts <string>     A comma separated list of hosts where requests will be sent. (default: null)
-  -x, --max <number>       The maximum number of objects to send to the server. (default: 0)
-  -j, --json <string>      The filename of a JSON list of objects. (default: null)
-  -s, --sitemap <string>   The sitemap.xml file location. (default: null)
-  -p, --property <string>  The JSON property to convert. (default: null)
-  --help                   display help for command
+  -t, --threads <number>     Number of CPU threads to use. This is also the number of processes that will run (one per thread). (default: 2)
+  -w, --workers <number>     Number of asyncronous workers to use per thread process. (default: 2)
+  -h, --host <string>        The address of the server where requests will be sent. (default: "localhost")
+  -H, --hosts <string>       A comma separated list of hosts where requests will be sent. (default: null)
+  -x, --max <number>         The maximum number of objects to send to the server. (default: all)
+  -j, --json <string>        The filename of a JSON list of objects. (default: null)
+  -l, --jsonl <string>       The filename of a JSON lines list of objects. (default: null)
+  -f, --files <string>       The path to the JSON files. (default: null)
+  -s, --sitemap <string>     The sitemap.xml file location. (default: null)
+  -p, --property <string>    The JSON property to convert. (default: null)
+  -m, --method <string>      GET (default) or POST (default: "GET")
+  --embeddings                (default: false)
+  --sentence-transformers     (default: false)
+  --question-answering        (default: false)
+  --sequence-classification   (default: false)
+  --token-classification      (default: false)
+  --visual                    (default: false)
+  --help                     display help for command
 ```
+
+# JSON and JSONL
+
+Mighty-batch can process both JSON and JSONL files.  Specify the `--property` for which data in the JSON object should be sent to Mighty.
+
+# Files
+
+If you have more than one JSON file, specify a path containing the JSON files, and all the files in that path will be processed.  sent to Mighty for processing.  Just like JSON, you need to specify the `--property` for which data in the JSON object should be sent to Mighty.
 
 # Sitemap
 
