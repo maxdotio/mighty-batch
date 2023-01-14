@@ -1,6 +1,7 @@
 import fs from "fs";
 import crypto from "crypto";
 import Sitemapper from "sitemapper";
+import dir from "node-dir";
 
 export function clean_filename(filename) {
     return filename.replace(/[:\/\.]+/g,'_')
@@ -25,6 +26,26 @@ export function get_files(files_path,min,max) {
                 "file":i,
                 "filename":files_path + '/' + filenames[i],
                 "outfile":out + filenames[i]
+            });
+        }
+    }
+    return files;
+}
+
+export function get_html_files(html_path,min,max) {
+    const files = [];
+    let out = "vectors/" + clean_filename(html_path) + "/";
+    fs.mkdirSync(out, { recursive: true });
+    const filenames = dir.files(html_path,{"sync":true})
+    min = min||0;
+    max = max||filenames.length;
+    for(var i=min;i<max;i++) {
+        if(filenames[i].indexOf(".html")>0) {
+            let filename = clean_filename(filenames[i].replace(html_path,'')) + ".json";
+            files.push({
+                "file":i,
+                "html":filenames[i],
+                "outfile":out + filename
             });
         }
     }

@@ -19,8 +19,10 @@
     "express": "^4.17.3",
     "image-to-base64": "^2.2.0",
     "jsdom": "^19.0.0",
+    "node-dir": "^0.1.17",
     "node-fetch": "^3.2.0",
     "progress": "^2.0.3",
+    "recursive-readdir": "^2.2.3",
     "sitemapper": "^3.2.2",
     "uuid": "^8.3.2"
   }

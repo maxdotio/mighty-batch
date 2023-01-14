@@ -6,8 +6,8 @@ import express from "express";
 import { fork } from "child_process";
 import { request, slice_hosts } from "./src/request.js";
 import { jsonl } from "./src/jsonl.js";
-import { fetch_and_transform } from "./src/html.js";
-import { batch, slice, get_files, get_parts, get_json, get_sitemap, total_files, mini_batch, clean_filename } from "./src/files.js";
+import { read_and_transform, fetch_and_transform } from "./src/html.js";
+import { batch, slice, get_files, get_html_files, get_parts, get_json, get_sitemap, total_files, mini_batch, clean_filename } from "./src/files.js";
 import { Command, Option } from "commander";
 import { isMainThread, BroadcastChannel, Worker, workerData } from "worker_threads";
 
@@ -30,6 +30,7 @@ program.addOption(new Option("-H, --hosts <string>","A comma separated list of h
 program.addOption(new Option("-x, --max <number>","The maximum number of objects to send to the server.").default(0));
 program.addOption(new Option("-j, --json <string>","The filename of a JSON list of objects.").default(null));
 program.addOption(new Option("-l, --jsonl <string>","The filename of a JSON lines list of objects.").default(null));
+program.addOption(new Option("-f, --html <string>","The path to the HTML files.").default(null));
 program.addOption(new Option("-f, --files <string>","The path to the JSON files.").default(null));
 program.addOption(new Option("-s, --sitemap <string>","The sitemap.xml file location.").default(null));
 program.addOption(new Option("-p, --property <string>","The JSON property to convert.").default(null));
@@ -68,6 +69,7 @@ const max = parseInt(program.opts().max);
 const json_file = program.opts().json;
 const jsonl_file = program.opts().jsonl;
 const sitemap_url = program.opts().sitemap;
+const html_path = program.opts().html;
 const files_path = program.opts().files;
 const property = program.opts().property;
 
@@ -134,6 +136,11 @@ if (json_file) {
     } else {
         console.log(`Sitemap ${sitemap_url} either not found or is empty!`);
     }
+} else if (html_path) {
+    name = clean_filename(html_path);
+    files = get_html_files(html_path,min,max);
+    console.log(files.length);
+    console.log(files[0]);
 } else if (files_path) {
     name = "files";
     files = get_files(files_path,min,max);
@@ -252,19 +259,34 @@ let object_generator = function(arr) {
                         obj.object = doc[1]
                     } else {
                         bar.tick();
-                        return {"error":{"url":obj.url,"ex":ex}};
+                        return {"error":{"url":obj.url,"ex":doc[0]||doc[1]}};
                     }
                 } catch (ex) {
                     bar.tick();
                     return {"error":{"url":obj.url,"ex":ex}};
                 }
+            } else if (obj.html) {
+                //An HTML file was specified.
+                //Try to scrape it!
+                try {
+                    let doc = await read_and_transform(obj.html);
+                    if (!doc[0] && doc[1]) {
+                        obj.object = doc[1]
+                    } else {
+                        bar.tick();
+                        return {"error":{"url":obj.html,"ex":doc[0]||doc[1]}};
+                    }
+                } catch (ex) {
+                    bar.tick();
+                    return {"error":{"url":obj.html,"ex":ex}};
+                }                
             } else if (obj.jsonstring) {
                 //A JSON string which hasn't been parsed yet!
                 try {
                     obj.object = JSON.parse(obj.jsonstring);
                 } catch (ex) {
                     bar.tick();
-                    return {"error":{"url":obj.url,"ex":ex}};                    
+                    return {"error":{"url":obj.url,"ex":ex}};
                 }
             }
             return obj;

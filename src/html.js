@@ -1,3 +1,4 @@
+import fs from "fs";
 import crypto from "crypto";
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
@@ -21,85 +22,104 @@ function guess_field(doc,possibles) {
     return val;
 }
 
+export function transform(url,html_string) {
+
+    try {
+        let doc = new JSDOM(html_string, {url: url});
+        let reader = new Readability(doc.window.document);
+        let article = reader.parse();
+
+        //Url
+        let canonical = guess_field(doc,[
+            ["link[rel=canonical]","href"],
+            ["meta[property=\"og:url\"]","content"]
+        ])||url;
+
+        //Title
+        let title = article.title;
+
+        //Author
+        let author = article.byline;
+
+        //Description
+        let description = article.excerpt;
+
+        //Dates
+        let published = guess_field(doc,[
+            ["meta[property=\"article:published_time\"]","content"],
+            ["meta[name=\"DC.date\"]","content"],
+            ["meta[name=\"DC.created\"]","content"]
+        ]);
+        let modified = guess_field(doc,[
+            ["meta[property=\"article:modified_time\"]","content"],
+            ["meta[name=\"DC.modified\"]","content"]
+        ]);
+
+        //Image
+        let image = guess_field(doc,[
+            ["meta[property=\"og:image\"]","content"],
+            ["meta[name=\"twitter.image\"]","content"]
+        ]);
+
+        //Article Text Content
+        let lines = article.textContent.trim().split(/[\n]+/).map((str)=>str.trim());
+        let body = lines.join('\n').trim().replace(/[\n]+/g,'\n');
+
+        //Augment article content with Title and Description
+        let bodylc = body.toLowerCase();
+        if (description && bodylc.indexOf(description.toLowerCase())<0) {
+            body = description + '\n' + body;
+        }
+        if (title && bodylc.indexOf(title.toLowerCase())<0) {
+            body = title + '\n' + body;
+        }
+
+        //Remove redundant spaces
+        body = body.replace(/[ \t]{2,}/g,' ');
+
+        //Identifier
+        let id = string_to_uuid(canonical);
+
+        let obj = {
+            "docid":id,
+            "url":canonical,
+            "title":title,
+            "author":author,
+            "description":description,
+            "published":published,
+            "modified":modified,
+            "image":image,
+            "text": body
+        }
+
+        return [null,obj];
+
+    } catch (ex) {
+
+        return [ex,null];
+        
+    }
+
+}
+
 export async function fetch_and_transform(url){
     let response = await request_html(url);
     if (!response[0] && response[1]) {
-        try {
-            let doc = new JSDOM(response[1], {url: url});
-            let reader = new Readability(doc.window.document);
-            let article = reader.parse();
-
-            //Url
-            let canonical = guess_field(doc,[
-                ["link[rel=canonical]","href"],
-                ["meta[property=\"og:url\"]","content"]
-            ])||url;
-
-            //Title
-            let title = article.title;
-
-            //Author
-            let author = article.byline;
-
-            //Description
-            let description = article.excerpt;
-
-            //Dates
-            let published = guess_field(doc,[
-                ["meta[property=\"article:published_time\"]","content"],
-                ["meta[name=\"DC.date\"]","content"],
-                ["meta[name=\"DC.created\"]","content"]
-            ]);
-            let modified = guess_field(doc,[
-                ["meta[property=\"article:modified_time\"]","content"],
-                ["meta[name=\"DC.modified\"]","content"]
-            ]);
-
-            //Image
-            let image = guess_field(doc,[
-                ["meta[property=\"og:image\"]","content"],
-                ["meta[name=\"twitter.image\"]","content"]
-            ]);
-
-            //Article Text Content
-            let lines = article.textContent.trim().split(/[\n]+/).map((str)=>str.trim());
-            let body = lines.join('\n').trim().replace(/[\n]+/g,'\n');
-
-            //Augment article content with Title and Description
-            let bodylc = body.toLowerCase();
-            if (description && bodylc.indexOf(description.toLowerCase())<0) {
-                body = description + '\n' + body;
-            }
-            if (title && bodylc.indexOf(title.toLowerCase())<0) {
-                body = title + '\n' + body;
-            }
-
-            //Identifier
-            let id = string_to_uuid(canonical);
-
-            let obj = {
-                "docid":id,
-                "url":canonical,
-                "title":title,
-                "author":author,
-                "description":description,
-                "published":published,
-                "modified":modified,
-                "image":image,
-                "text": body
-            }
-
-            return [null,obj];
-
-        } catch (ex) {
-
-            return [ex,null];
-            
-        }
-
+        return transform(url,response[1]);
+    } else {
+        return response;
     }
-    return response;
 }
+
+export async function read_and_transform(filename){
+    try {
+        let html = fs.readFileSync(filename,"utf-8");
+        return transform('file://'+filename,html);
+    } catch(ex) {
+        return [ex,null];
+    }
+}
+
 
 /*
 Example of some metadata fields to use as a basic reference
