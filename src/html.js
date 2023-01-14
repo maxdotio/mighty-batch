@@ -113,7 +113,7 @@ export async function fetch_and_transform(url){
 
 export async function read_and_transform(filename){
     try {
-        let html = fs.readFileSync(filename,"utf-8");
+        let html = await fs.promises.readFile(filename,"utf-8");
         return transform('file://'+filename,html);
     } catch(ex) {
         return [ex,null];

@@ -30,7 +30,7 @@ program.addOption(new Option("-H, --hosts <string>","A comma separated list of h
 program.addOption(new Option("-x, --max <number>","The maximum number of objects to send to the server.").default(0));
 program.addOption(new Option("-j, --json <string>","The filename of a JSON list of objects.").default(null));
 program.addOption(new Option("-l, --jsonl <string>","The filename of a JSON lines list of objects.").default(null));
-program.addOption(new Option("-f, --html <string>","The path to the HTML files.").default(null));
+program.addOption(new Option("-M, --html <string>","The path to the HTML files.").default(null));
 program.addOption(new Option("-f, --files <string>","The path to the JSON files.").default(null));
 program.addOption(new Option("-s, --sitemap <string>","The sitemap.xml file location.").default(null));
 program.addOption(new Option("-p, --property <string>","The JSON property to convert.").default(null));

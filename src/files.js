@@ -40,7 +40,7 @@ export function get_html_files(html_path,min,max) {
     min = min||0;
     max = max||filenames.length;
     for(var i=min;i<max;i++) {
-        if(filenames[i].indexOf(".html")>0) {
+        if(filenames[i].indexOf(".htm")>0) {
             let filename = clean_filename(filenames[i].replace(html_path,'')) + ".json";
             files.push({
                 "file":i,
