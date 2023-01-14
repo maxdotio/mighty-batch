@@ -1,6 +1,6 @@
 {
   "name": "mighty-batch",
-  "version": "1.7.2",
+  "version": "1.8.0",
   "description": "Concurrent inference on lots of data",
   "main": "index.js",
   "type": "module",
@@ -22,7 +22,6 @@
     "node-dir": "^0.1.17",
     "node-fetch": "^3.2.0",
     "progress": "^2.0.3",
-    "recursive-readdir": "^2.2.3",
     "sitemapper": "^3.2.2",
     "uuid": "^8.3.2"
   }
