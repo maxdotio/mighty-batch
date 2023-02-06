@@ -47,6 +47,7 @@ Options:
   -s, --sitemap <string>     The sitemap.xml file location. (default: null)
   -p, --property <string>    The JSON property to convert. (default: null)
   -m, --method <string>      GET (default) or POST (default: "GET")
+  --save-jsonl <string>      Saves intermediary HTML or Sitemap output to JSONL (default: null)
   --embeddings                (default: false)
   --sentence-transformers     (default: false)
   --question-answering        (default: false)
