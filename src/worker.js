@@ -49,10 +49,16 @@ if (!isMainThread) {
                 }
             } else {
                 response = await request(url,text,method);
-                if (response[1]) {
+                if (response[1] && response[1].outputs) {
                     vec = response[1].outputs;
                     txt = response[1].texts;
-                } else {
+                } else if (response[1] && response[1].entities) {
+                    vec = response[1].entities;
+                    txt = response[1].texts;
+                } else if (response[1]) {
+                    vec = response[1];
+                    txt = [];                    
+                } else  {
                     err = response[0];
                     vec = [];
                     txt = [];

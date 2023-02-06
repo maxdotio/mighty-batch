@@ -189,7 +189,7 @@ let exit_child = function(event) {
 
         if (errors.length) {
             error_stream.end();            
-            console.error(`DONE! Total errors: ${errors.length} ...see ${err_file} for detailed information.`);
+            console.error(`DONE! Total errors: ${errors.length} ...see ${error_file} for detailed information.`);
 
             //Bye!
             process.exit(1);
