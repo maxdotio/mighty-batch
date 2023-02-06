@@ -1,3 +1,5 @@
+//Level 2 - THREAD child (spawned by ../index.js)
+
 import fs from "fs";
 import progress from "progress";
 import { fork } from "child_process";

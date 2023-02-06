@@ -4,7 +4,7 @@ import { isMainThread, BroadcastChannel, workerData } from "worker_threads";
 import imageToBase64 from "image-to-base64";
 
 if (!isMainThread) {
-    //Level 3 - WORKER child (see multi.js)
+    //Level 3 - WORKER child (called by thread.js)
 
     const channel = new BroadcastChannel('mightybatch');
 

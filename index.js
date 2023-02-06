@@ -14,6 +14,7 @@ import { isMainThread, BroadcastChannel, Worker, workerData } from "worker_threa
 
 import { v4 as uuidv4 } from "uuid";
 const secret = uuidv4();
+const date_string = new Date().toISOString().replace(/[\:\.]/g,'-');
 
 import path from 'path';
 import {fileURLToPath} from 'url';
@@ -35,6 +36,7 @@ program.addOption(new Option("-f, --files <string>","The path to the JSON files.
 program.addOption(new Option("-s, --sitemap <string>","The sitemap.xml file location.").default(null));
 program.addOption(new Option("-p, --property <string>","The JSON property to convert.").default(null));
 program.addOption(new Option("-m, --method <string>","GET (default) or POST").default("GET"));
+program.addOption(new Option("--save-jsonl <string>","Saves intermediary HTML or Sitemap output to JSONL").default(null));
 program.addOption(new Option("--embeddings").default(false));
 program.addOption(new Option("--sentence-transformers").default(false));
 program.addOption(new Option("--question-answering").default(false));
@@ -72,6 +74,7 @@ const sitemap_url = program.opts().sitemap;
 const html_path = program.opts().html;
 const files_path = program.opts().files;
 const property = program.opts().property;
+const save_jsonl = program.opts().saveJsonl;
 
 //Pipeline specs and conflicts
 let pipeline = null;
@@ -157,6 +160,16 @@ var bar = new progress("Inferring [:bar] :percent remaining::etas elapsed::elaps
 
 let threads_completed = 0;
 let errors = [];
+let error_file = `${name}_${date_string}_error.log`;
+let error_sep = '';
+let error_stream = fs.createWriteStream(error_file, {flags:'a'});
+let jsonl_stream;
+let jsonl_sep = '';
+
+
+if(save_jsonl) {
+    jsonl_stream = fs.createWriteStream(save_jsonl, {flags:'a'});
+}
 
 //
 // Called when a thread and all its workers are done
@@ -175,8 +188,7 @@ let exit_child = function(event) {
         }
 
         if (errors.length) {
-            let err_file = `${name}_error.log`;
-            fs.writeFileSync(err_file,JSON.stringify(errors,null,2),"utf-8");
+            error_stream.end();            
             console.error(`DONE! Total errors: ${errors.length} ...see ${err_file} for detailed information.`);
 
             //Bye!
@@ -221,6 +233,9 @@ let spawn_child = function(thread_num) {
       on("message", (event) => {
         
         if (event.type=="error") {
+            let message = JSON.stringify(event.data,null,2);
+            error_stream.write(error_sep+message);
+            error_sep = ",\n";
             errors.push(event.data);
         }
 
@@ -272,6 +287,10 @@ let object_generator = function(arr) {
                     let doc = await read_and_transform(obj.html);
                     if (!doc[0] && doc[1]) {
                         obj.object = doc[1]
+                        if (save_jsonl) {
+                            jsonl_stream.write(jsonl_sep + JSON.stringify(obj.object));
+                            jsonl_sep = '\n';
+                        }
                     } else {
                         bar.tick();
                         return {"error":{"url":obj.html,"ex":doc[0]||doc[1]}};
